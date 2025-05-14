@@ -3,186 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Happy Birthday!</title>
+    <title>Voice-Controlled Endless Platformer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: linear-gradient(to bottom, #ffcccb, #87ceeb);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-        }
-        canvas {
-            display: block;
-        }
-        #message {
-            position: absolute;
-            top: 20px;
-            color: #fff;
-            font-size: 24px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            text-align: center;
-        }
-        #micButton {
-            position: absolute;
-            top: 60px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-        #micLevel {
-            position: absolute;
-            top: 100px;
-            color: #fff;
-            font-size: 16px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-        }
-    </style>
 </head>
 <body>
-    <div id="message">Click 'Start Microphone', then blow for 1 second or click/tap candles!</div>
-    <button id="micButton" onclick="startMicrophone()">Start Microphone</button>
-    <div id="micLevel">Mic Level: Waiting...</div>
     <script>
+        let player;
+        let platforms = [];
         let mic;
-        let candles = [];
-        let plane;
-        let banner;
-        let micStarted = false;
-        let blowStartTime = null;
-        const blowThreshold = 0.05;
-        const requiredBlowDuration = 1000; // 1 second in milliseconds
+        let baseScrollSpeed = 2;
+        let scrollSpeed = 0; // No movement without sound
+        let gameOver = false;
+        let lastSoundTime = 0;
+        let soundDuration = 0;
 
         function setup() {
-            createCanvas(windowWidth, windowHeight);
-            // Initialize candles
-            for (let i = 0; i < 5; i++) {
-                candles.push({
-                    x: width / 2 - 80 + i * 40,
-                    y: height / 2 - 50,
-                    lit: true,
-                    flameSize: 20
-                });
-            }
-
-            // Initialize plane and banner
-            plane = { x: -100, y: 100, speed: 3 };
-            banner = { text: "Happy Birthday to You!", length: 200 };
-        }
-
-        function startMicrophone() {
-            if (!micStarted) {
-                mic = new p5.AudioIn();
-                mic.start(() => {
-                    micStarted = true;
-                    console.log("Microphone access granted and started successfully.");
-                    document.getElementById('micButton').style.display = 'none';
-                }, (err) => {
-                    console.error("Microphone access failed: ", err);
-                    alert("Microphone access failed. Ensure microphone is allowed in Chrome settings and the site is served over HTTPS.");
-                });
+            createCanvas(800, 600);
+            // Initialize microphone
+            mic = new p5.AudioIn();
+            mic.start();
+            // Initialize player on first platform
+            platforms.push(createPlatform(100));
+            player = {
+                x: 100,
+                y: platforms[0].y - 15,
+                vy: 0,
+                size: 30,
+                onPlatform: true
+            };
+            // Create initial platforms
+            for (let i = 1; i < 5; i++) {
+                platforms.push(createPlatform(100 + i * 200));
             }
         }
 
         function draw() {
-            background(135, 206, 235); // Sky blue background
-            drawCake();
-            drawCandles();
-            drawPlane();
-            if (micStarted) {
-                checkMicLevel();
-            }
-        }
-
-        function drawCake() {
-            // Cake base
-            fill(255, 182, 193); // Pink frosting
-            rect(width / 2 - 100, height / 2, 200, 100, 20);
-            fill(139, 69, 19); // Chocolate layer
-            rect(width / 2 - 100, height / 2 + 20, 200, 80);
-        }
-
-        function drawCandles() {
-            candles.forEach(candle => {
-                // Candle stick
-                fill(255, 255, 255);
-                rect(candle.x - 5, candle.y - 20, 10, 20);
-                // Flame
-                if (candle.lit) {
-                    fill(255, 165, 0);
-                    ellipse(candle.x, candle.y - 30, candle.flameSize / 2, candle.flameSize);
-                    candle.flameSize = 20 + sin(frameCount * 0.1) * 5; // Flickering effect
+            background(220);
+            
+            if (!gameOver) {
+                // Get microphone volume (0 to 1)
+                let vol = mic.getLevel();
+                
+                // Track sound duration for longer screams
+                if (vol > 0.02) { // Threshold to detect intentional sound
+                    if (lastSoundTime === 0) {
+                        lastSoundTime = millis();
+                    }
+                    soundDuration = (millis() - lastSoundTime) / 1000; // Duration in seconds
+                    // Set scroll speed based on sound
+                    scrollSpeed = map(vol * soundDuration, 0, 0.3, baseScrollSpeed, 5, true);
+                } else {
+                    lastSoundTime = 0;
+                    soundDuration = 0;
+                    scrollSpeed = 0; // No movement without sound
                 }
-            });
-        }
 
-        function drawPlane() {
-            // Plane
-            fill(255);
-            triangle(plane.x, plane.y, plane.x - 40, plane.y - 10, plane.x - 40, plane.y + 10);
-            fill(255, 0, 0);
-            ellipse(plane.x - 20, plane.y, 20, 10); // Cockpit
-            // Banner
-            fill(255, 255, 0);
-            rect(plane.x - 40, plane.y, -banner.length, 20);
-            fill(0);
-            textSize(16);
-            text(banner.text, plane.x - 40 - banner.length + 10, plane.y + 15);
-            // Move plane
-            plane.x += plane.speed;
-            if (plane.x > width + banner.length) {
-                plane.x = -100;
-            }
-        }
+                // Map volume and duration to jump strength
+                let jumpStrength = map(vol * soundDuration, 0, 0.3, 0, -15, true);
 
-        function checkMicLevel() {
-            let level = mic.getLevel();
-            document.getElementById('micLevel').innerText = `Mic Level: ${level.toFixed(3)}`;
-            console.log("Mic level: ", level);
-            if (level > blowThreshold) {
-                if (blowStartTime === null) {
-                    blowStartTime = millis();
-                } else if (millis() - blowStartTime >= requiredBlowDuration) {
-                    candles.forEach(candle => {
-                        candle.lit = false;
-                    });
-                    blowStartTime = null; // Reset after extinguishing
+                // Player jump logic (only jump when on platform)
+                if (jumpStrength < -2 && player.onPlatform) {
+                    player.vy = jumpStrength;
+                    player.onPlatform = false;
                 }
+
+                // Update player
+                player.vy += 0.5; // Gravity
+                player.y += player.vy;
+                player.x += scrollSpeed; // Move player with screen scroll
+
+                // Check if player is on a platform
+                player.onPlatform = false;
+                for (let platform of platforms) {
+                    if (player.x + player.size / 2 > platform.x &&
+                        player.x - player.size / 2 < platform.x + platform.width &&
+                        player.y + player.size / 2 > platform.y &&
+                        player.y + player.size / 2 < platform.y + 20 &&
+                        player.vy > 0) {
+                        player.y = platform.y - player.size / 2;
+                        player.vy = 0;
+                        player.onPlatform = true;
+                    }
+                }
+
+                // If player falls off screen, game over
+                if (player.y - player.size / 2 > height) {
+                    gameOver = true;
+                }
+
+                // Scroll platforms
+                for (let platform of platforms) {
+                    platform.x -= scrollSpeed;
+                }
+
+                // Remove off-screen platforms and add new ones
+                if (platforms[0].x + platforms[0].width < 0) {
+                    platforms.shift();
+                    let lastPlatform = platforms[platforms.length - 1];
+                    platforms.push(createPlatform(lastPlatform.x + 200));
+                }
+
+                // Draw platforms (tall pillars to bottom)
+                fill(100);
+                for (let platform of platforms) {
+                    rect(platform.x, platform.y, platform.width, height - platform.y);
+                }
+
+                // Draw player
+                fill(255, 0, 0);
+                ellipse(player.x, player.y, player.size);
+
+                // Display volume and duration meter
+                let volHeight = map(vol * soundDuration, 0, 0.3, 0, 100, true);
+                fill(0, 255, 0);
+                rect(10, height - 110, 20, volHeight);
             } else {
-                blowStartTime = null; // Reset if blow stops
+                // Game over screen
+                fill(0);
+                textSize(32);
+                textAlign(CENTER);
+                text("Game Over! Refresh to restart.", width / 2, height / 2);
             }
         }
 
-        function mousePressed() {
-            candles.forEach(candle => {
-                let d = dist(mouseX, mouseY, candle.x, candle.y - 30);
-                if (d < 20) {
-                    candle.lit = !candle.lit;
-                }
-            });
-        }
-
-        function touchStarted() {
-            mousePressed();
-            return false;
-        }
-
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-            // Reposition candles
-            candles.forEach((candle, i) => {
-                candle.x = width / 2 - 80 + i * 40;
-                candle.y = height / 2 - 50;
-            });
+        function createPlatform(x) {
+            return {
+                x: x,
+                y: random(height * 0.3, height * 0.7),
+                width: random(40, 150), // Random width, min 40px for character to stand
+                height: height // Extends to bottom
+            };
         }
     </script>
 </body>
