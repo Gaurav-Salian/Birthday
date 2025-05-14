@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday!</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #ffcccb, #87ceeb);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #message {
+            position: absolute;
+            top: 20px;
+            color: #fff;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="message">Blow on the candles or click/tap to light them!</div>
+    <script>
+        let mic;
+        let candles = [];
+        let plane;
+        let banner;
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            mic = new p5.AudioIn();
+            mic.start();
+
+            // Initialize candles
+            for (let i = 0; i < 5; i++) {
+                candles.push({
+                    x: width / 2 - 80 + i * 40,
+                    y: height / 2 - 50,
+                    lit: true,
+                    flameSize: 20
+                });
+            }
+
+            // Initialize plane and banner
+            plane = { x: -100, y: 100, speed: 3 };
+            banner = { text: "Happy Birthday to You!", length: 200 };
+        }
+
+        function draw() {
+            background(135, 206, 235); // Sky blue background
+            drawCake();
+            drawCandles();
+            drawPlane();
+            checkMicLevel();
+        }
+
+        function drawCake() {
+            // Cake base
+            fill(255, 182, 193); // Pink frosting
+            rect(width / 2 - 100, height / 2, 200, 100, 20);
+            fill(139, 69, 19); // Chocolate layer
+            rect(width / 2 - 100, height / 2 + 20, 200, 80);
+        }
+
+        function drawCandles() {
+            candles.forEach(candle => {
+                // Candle stick
+                fill(255, 255, 255);
+                rect(candle.x - 5, candle.y - 20, 10, 20);
+                // Flame
+                if (candle.lit) {
+                    fill(255, 165, 0);
+                    ellipse(candle.x, candle.y - 30, candle.flameSize / 2, candle.flameSize);
+                    candle.flameSize = 20 + sin(frameCount * 0.1) * 5; // Flickering effect
+                }
+            });
+        }
+
+        function drawPlane() {
+            // Plane
+            fill(255);
+            triangle(plane.x, plane.y, plane.x - 40, plane.y - 10, plane.x - 40, plane.y + 10);
+            fill(255, 0, 0);
+            ellipse(plane.x - 20, plane.y, 20, 10); // Cockpit
+            // Banner
+            fill(255, 255, 0);
+            rect(plane.x - 40, plane.y, -banner.length, 20);
+            fill(0);
+            textSize(16);
+            text(banner.text, plane.x - 40 - banner.length + 10, plane.y + 15);
+            // Move plane
+            plane.x += plane.speed;
+            if (plane.x > width + banner.length) {
+                plane.x = -100;
+            }
+        }
+
+        function checkMicLevel() {
+            let level = mic.getLevel();
+            if (level > 0.1) { // Threshold for blowing
+                candles.forEach(candle => {
+                    candle.lit = false;
+                });
+            }
+        }
+
+        function mousePressed() {
+            candles.forEach(candle => {
+                let d = dist(mouseX, mouseY, candle.x, candle.y - 30);
+                if (d < 20) {
+                    candle.lit = !candle.lit;
+                }
+            });
+        }
+
+        function touchStarted() {
+            mousePressed();
+            return false;
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            // Reposition candles
+            candles.forEach((candle, i) => {
+                candle.x = width / 2 - 80 + i * 40;
+                candle.y = height / 2 - 50;
+            });
+        }
+    </script>
+</body>
+</html>
