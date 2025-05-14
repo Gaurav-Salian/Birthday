@@ -36,11 +36,17 @@
         let candles = [];
         let plane;
         let banner;
+        let micStarted = false;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
+            // Initialize microphone with error handling
             mic = new p5.AudioIn();
-            mic.start();
+            mic.start(() => {
+                micStarted = true;
+            }, () => {
+                console.log("Microphone access denied or failed.");
+            });
 
             // Initialize candles
             for (let i = 0; i < 5; i++) {
@@ -62,7 +68,9 @@
             drawCake();
             drawCandles();
             drawPlane();
-            checkMicLevel();
+            if (micStarted) {
+                checkMicLevel();
+            }
         }
 
         function drawCake() {
@@ -108,7 +116,7 @@
 
         function checkMicLevel() {
             let level = mic.getLevel();
-            if (level > 0.1) { // Threshold for blowing
+            if (level > 0.05) { // Lowered threshold for blowing
                 candles.forEach(candle => {
                     candle.lit = false;
                 });
