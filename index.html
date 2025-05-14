@@ -30,7 +30,7 @@
     </style>
 </head>
 <body>
-    <div id="message">Blow on the candles for 2 seconds or click/tap to light them!</div>
+    <div id="message">Blow on the candles for 1 second or click/tap to light them!</div>
     <script>
         let mic;
         let candles = [];
@@ -39,7 +39,7 @@
         let micStarted = false;
         let blowStartTime = null;
         const blowThreshold = 0.05;
-        const requiredBlowDuration = 2000; // 2 seconds in milliseconds
+        const requiredBlowDuration = 1000; // 1 second in milliseconds
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -47,8 +47,10 @@
             mic = new p5.AudioIn();
             mic.start(() => {
                 micStarted = true;
-            }, () => {
-                console.log("Microphone access denied or failed.");
+                console.log("Microphone access granted and started successfully.");
+            }, (err) => {
+                console.error("Microphone access failed: ", err);
+                alert("Microphone access was denied or failed. Please allow microphone access in your browser settings and ensure you're using HTTPS.");
             });
 
             // Initialize candles
@@ -119,6 +121,7 @@
 
         function checkMicLevel() {
             let level = mic.getLevel();
+            console.log("Mic level: ", level); // Debug mic level
             if (level > blowThreshold) {
                 if (blowStartTime === null) {
                     blowStartTime = millis();
