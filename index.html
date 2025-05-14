@@ -30,13 +30,16 @@
     </style>
 </head>
 <body>
-    <div id="message">Blow on the candles or click/tap to light them!</div>
+    <div id="message">Blow on the candles for 2 seconds or click/tap to light them!</div>
     <script>
         let mic;
         let candles = [];
         let plane;
         let banner;
         let micStarted = false;
+        let blowStartTime = null;
+        const blowThreshold = 0.05;
+        const requiredBlowDuration = 2000; // 2 seconds in milliseconds
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -116,10 +119,17 @@
 
         function checkMicLevel() {
             let level = mic.getLevel();
-            if (level > 0.05) { // Lowered threshold for blowing
-                candles.forEach(candle => {
-                    candle.lit = false;
-                });
+            if (level > blowThreshold) {
+                if (blowStartTime === null) {
+                    blowStartTime = millis();
+                } else if (millis() - blowStartTime >= requiredBlowDuration) {
+                    candles.forEach(candle => {
+                        candle.lit = false;
+                    });
+                    blowStartTime = null; // Reset after extinguishing
+                }
+            } else {
+                blowStartTime = null; // Reset if blow stops
             }
         }
 
