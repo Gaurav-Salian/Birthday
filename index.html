@@ -46,13 +46,13 @@
                 let vol = mic.getLevel();
                 
                 // Track sound duration for longer screams
-                if (vol > 0.02) { // Threshold to detect intentional sound
+                if (vol > 0.05) { // Increased threshold for less sensitivity
                     if (lastSoundTime === 0) {
                         lastSoundTime = millis();
                     }
                     soundDuration = (millis() - lastSoundTime) / 1000; // Duration in seconds
                     // Set scroll speed based on sound
-                    scrollSpeed = map(vol * soundDuration, 0, 0.3, baseScrollSpeed, 5, true);
+                    scrollSpeed = map(vol * soundDuration, 0, 0.5, baseScrollSpeed, 5, true); // Reduced sensitivity
                 } else {
                     lastSoundTime = 0;
                     soundDuration = 0;
@@ -60,7 +60,7 @@
                 }
 
                 // Map volume and duration to jump strength
-                let jumpStrength = map(vol * soundDuration, 0, 0.3, 0, -15, true);
+                let jumpStrength = map(vol * soundDuration, 0, 0.5, 0, -15, true); // Reduced sensitivity
 
                 // Player jump logic (only jump when on platform)
                 if (jumpStrength < -2 && player.onPlatform) {
@@ -115,7 +115,7 @@
                 ellipse(player.x, player.y, player.size);
 
                 // Display volume and duration meter
-                let volHeight = map(vol * soundDuration, 0, 0.3, 0, 100, true);
+                let volHeight = map(vol * soundDuration, 0, 0.5, 0, 100, true);
                 fill(0, 255, 0);
                 rect(10, height - 110, 20, volHeight);
             } else {
