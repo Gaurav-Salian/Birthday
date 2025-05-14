@@ -60,7 +60,7 @@
                 }
 
                 // Map volume and duration to jump strength
-                let jumpStrength = map(vol * soundDuration, 0, 0.5, 0, -15, true); // Reduced sensitivity
+                let jumpStrength = map(vol * soundDuration, 0, 1, 0, -15, true); // Reduced sensitivity
 
                 // Player jump logic (only jump when on platform)
                 if (jumpStrength < -2 && player.onPlatform) {
