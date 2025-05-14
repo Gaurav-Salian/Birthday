@@ -26,11 +26,32 @@
             color: #fff;
             font-size: 24px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+        #micButton {
+            position: absolute;
+            top: 60px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #micLevel {
+            position: absolute;
+            top: 100px;
+            color: #fff;
+            font-size: 16px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
     </style>
 </head>
 <body>
-    <div id="message">Blow on the candles for 1 second or click/tap to light them!</div>
+    <div id="message">Click 'Start Microphone', then blow for 1 second or click/tap candles!</div>
+    <button id="micButton" onclick="startMicrophone()">Start Microphone</button>
+    <div id="micLevel">Mic Level: Waiting...</div>
     <script>
         let mic;
         let candles = [];
@@ -43,16 +64,6 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            // Initialize microphone with error handling
-            mic = new p5.AudioIn();
-            mic.start(() => {
-                micStarted = true;
-                console.log("Microphone access granted and started successfully.");
-            }, (err) => {
-                console.error("Microphone access failed: ", err);
-                alert("Microphone access was denied or failed. Please allow microphone access in your browser settings and ensure you're using HTTPS.");
-            });
-
             // Initialize candles
             for (let i = 0; i < 5; i++) {
                 candles.push({
@@ -66,6 +77,20 @@
             // Initialize plane and banner
             plane = { x: -100, y: 100, speed: 3 };
             banner = { text: "Happy Birthday to You!", length: 200 };
+        }
+
+        function startMicrophone() {
+            if (!micStarted) {
+                mic = new p5.AudioIn();
+                mic.start(() => {
+                    micStarted = true;
+                    console.log("Microphone access granted and started successfully.");
+                    document.getElementById('micButton').style.display = 'none';
+                }, (err) => {
+                    console.error("Microphone access failed: ", err);
+                    alert("Microphone access failed. Ensure microphone is allowed in Chrome settings and the site is served over HTTPS.");
+                });
+            }
         }
 
         function draw() {
@@ -121,7 +146,8 @@
 
         function checkMicLevel() {
             let level = mic.getLevel();
-            console.log("Mic level: ", level); // Debug mic level
+            document.getElementById('micLevel').innerText = `Mic Level: ${level.toFixed(3)}`;
+            console.log("Mic level: ", level);
             if (level > blowThreshold) {
                 if (blowStartTime === null) {
                     blowStartTime = millis();
